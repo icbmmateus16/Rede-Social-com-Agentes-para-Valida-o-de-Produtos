@@ -38,19 +38,31 @@ A interface foi recentemente repensada utilizando o padrão arquitetônico **Dar
 <div align="center">
 <table>
 <tr>
-<td><img src="https://via.placeholder.com/600x350/060608/ffffff?text=Remotion+DataViz+Hero+Panel" alt="Screenshot 1" width="100%"/></td>
-<td><img src="https://via.placeholder.com/600x350/16161a/ff4500?text=Interactive+Execution+Console" alt="Screenshot 2" width="100%"/></td>
+<td><img src="https://placehold.co/600x350/060608/FF4500?text=Remotion+DataViz+Hero" alt="Painel Interativo 1" width="100%"/></td>
+<td><img src="https://placehold.co/600x350/16161a/FFFFFF?text=Interactive+Console" alt="Painel Interativo 2" width="100%"/></td>
 </tr>
 </table>
+*Nota: Substitua as imagens de "placehold" pelas capturas de tela reais da plataforma rodando no seu computador.*
 </div>
 
 ---
 
 ## ⚙️ Arquitetura Core do Motor
 
-1. **Geração de Grafo e Perfis:** O motor chama as APIs de LLM utilizando estruturação JSON agressiva (via `Groq`) instanciando 50 a 500 perfis psicológicos exclusivos.
+1. **Geração de Grafo e Perfis:** O motor chama as APIs de LLM utilizando estruturação JSON agressiva instanciando 50 a 500 perfis psicológicos exclusivos.
 2. **Setup do Funil de Validação:** Alocação nativa entre `Unaware` -> `Aware` -> `Considering` -> `Adopted/Rejected` (Funil B2B).
 3. **Loop de Propagação (Tick Engine):** Influências ocorrem através de nós conectados avaliando a **Tolerância ao Risco** vs **Sensibilidade ao Preço**.
+
+---
+
+## 📈 Estatísticas e Histórico de Crescimento
+<a href="https://star-history.com/#icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date" />
+ </picture>
+</a>
 
 ---
 
