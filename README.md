@@ -2,7 +2,10 @@
 
 # 📊 MarketSim B2B Engine v2.0
 
-<a href="https://github.com/SeuGitHub/MarketSim" target="_blank"><img src="https://trendshift.io/api/badge/repositories/16144" alt="MarketSim | Trendshift" align="right" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+<div align="right">
+  <img src="https://img.shields.io/badge/Arquitetura-Neural_Graph-09090b?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Arquitetura" />
+  <img src="https://img.shields.io/badge/Status-B2B_Beta-ff4500?style=for-the-badge&logo=rocket&logoColor=white" alt="Status" />
+</div>
 
 **O Motor de Inteligência de Enxames (Swarm Intelligence) Focado em Validação de Produto.**
 <br/>
