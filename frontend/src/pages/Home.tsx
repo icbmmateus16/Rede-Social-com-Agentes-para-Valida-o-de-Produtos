@@ -106,7 +106,7 @@ export default function Home() {
         {/* Console Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: "2rem" }}>
           <div style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontFamily: "var(--font-mono)", marginBottom: "1.5rem", textTransform: "uppercase" }}>
-            > Carregando histórico da base...
+            {">"} Carregando histórico da base...
           </div>
 
           {loading ? (
