@@ -31,21 +31,27 @@ Em vez de pesquisas de mercado caras e lentas, o sistema:
 
 ## Demo
 
-> **Adicione seus screenshots aqui!**
-> 
-> Sugestão de prints para capturar:
-> - Tela de criação de simulação
-> - Grafo com cores variadas (verde/amarelo/vermelho) durante propagação
-> - Rede social ao vivo com eventos
-> - Página de relatório com insights
+### Evolução das opiniões ao longo das rodadas de propagação
 
-| Geração de Personas | Propagação de Opiniões |
-|---|---|
-| `screenshot_geracao.png` | `screenshot_propagacao.png` |
+![Propagação de Opiniões](docs/screenshots/01_propagacao_opiniao.png)
 
-| Toggle Opinião/Comunidade | Relatório Estratégico |
-|---|---|
-| `screenshot_toggle.png` | `screenshot_relatorio.png` |
+### Rede social antes e depois da propagação
+
+![Rede Social](docs/screenshots/02_rede_social.png)
+
+### Distribuição de opiniões e conectividade dos agentes
+
+![Análise dos Agentes](docs/screenshots/03_analise_agentes.png)
+
+### Impacto dos influenciadores na taxa de conversão
+
+![Influenciadores](docs/screenshots/04_impacto_influenciadores.png)
+
+### Validação da topologia Small-World (Watts-Strogatz)
+
+![Small-World](docs/screenshots/05_small_world.png)
+
+> **Screenshots da interface:** adicione prints do sistema rodando para mostrar o visual em tempo real.
 
 ---
 
