@@ -38,11 +38,11 @@ A interface foi recentemente repensada utilizando o padrão arquitetônico **Dar
 <div align="center">
 <table>
 <tr>
-<td><img src="https://placehold.co/600x350/060608/FF4500?text=Remotion+DataViz+Hero" alt="Painel Interativo 1" width="100%"/></td>
-<td><img src="https://placehold.co/600x350/16161a/FFFFFF?text=Interactive+Console" alt="Painel Interativo 2" width="100%"/></td>
+<td><img src="./static/market_distribution.png" alt="Distribuição Psicométrica (Grafo Bayesian)" width="100%"/></td>
+<td><img src="./static/funnel_dynamics.png" alt="Dinâmicas do Funil de Validação B2B" width="100%"/></td>
 </tr>
 </table>
-*Nota: Substitua as imagens de "placehold" pelas capturas de tela reais da plataforma rodando no seu computador.*
+*Analytics Preditivos Reais extraídos diretamente do motor Matemático local.*
 </div>
 
 ---
