@@ -31,18 +31,21 @@
 
 ---
 
-## 📸 Screenshots & Interface "Console Dashboard"
+## 📸 Capturas de Tela e Interface "Console Dashboard"
 
 A interface foi recentemente repensada utilizando o padrão arquitetônico **Dark Console "MiroFish" Split Panel**:
 
 <div align="center">
 <table>
 <tr>
-<td><img src="./static/market_distribution.png" alt="Distribuição Psicométrica (Grafo Bayesian)" width="100%"/></td>
-<td><img src="./static/funnel_dynamics.png" alt="Dinâmicas do Funil de Validação B2B" width="100%"/></td>
+<td><img src="./static/interfaces/print_4.png" alt="Console Engine Execution" width="100%"/></td>
+<td><img src="./static/interfaces/print_5.png" alt="Remotion Network Physics" width="100%"/></td>
+</tr>
+<tr>
+<td><img src="./static/interfaces/print_6.png" alt="Parameters Matrix" width="100%"/></td>
+<td><img src="./static/interfaces/print_3.png" alt="Live Feed B2B Pipeline" width="100%"/></td>
 </tr>
 </table>
-*Analytics Preditivos Reais extraídos diretamente do motor Matemático local.*
 </div>
 
 ---
@@ -55,14 +58,25 @@ A interface foi recentemente repensada utilizando o padrão arquitetônico **Dar
 
 ---
 
-## 📈 Estatísticas e Histórico de Crescimento
-<a href="https://star-history.com/#icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=icbmmateus16/Rede-Social-com-Agentes-para-Valida-o-de-Produtos&type=Date" />
- </picture>
-</a>
+## 📈 Analytics Preditivos do Motor Core
+
+O ambiente executa matemática epidêmica complexa focada na validação reversa de produto. Abaixo demonstramos a capacidade analítica da nossa Sandbox Bayesiana.
+
+<div align="center">
+<table>
+<tr>
+<td><img src="./static/chart_1_funnel.png" alt="Funil Dynamics" width="100%"/><br><i>Propagação Orgânica do Funil de Vendas</i></td>
+<td><img src="./static/chart_2_bayes.png" alt="Bayes Map" width="100%"/><br><i>Distribuição Psicométrica (Grafo Bayesiano)</i></td>
+</tr>
+<tr>
+<td><img src="./static/chart_3_shocks.png" alt="Market Shocks" width="100%"/><br><i>Elasticidade Social sob Market Shocks</i></td>
+<td><img src="./static/chart_4_friction.png" alt="Price Friction" width="100%"/><br><i>Atrito Logístico de Precificação</i></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><img src="./static/chart_5_topology.png" alt="Topologia Social" width="80%"/><br><i>Renderização da Topologia Algorítmica Reversa</i></td>
+</tr>
+</table>
+</div>
 
 ---
 
