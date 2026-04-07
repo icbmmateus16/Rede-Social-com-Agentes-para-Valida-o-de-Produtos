@@ -1,4 +1,4 @@
-export type PurchaseIntent = "strong_buy" | "likely_buy" | "neutral" | "unlikely" | "reject";
+export type FunnelStage = "unaware" | "aware" | "considering" | "rejected" | "purchased";
 export type SimulationStatus = "draft" | "generating" | "building" | "running" | "paused" | "complete" | "error";
 
 export interface PersonaProfile {
@@ -32,7 +32,7 @@ export interface Agent {
   name: string;
   profile: PersonaProfile;
   opinion: OpinionState;
-  intent: PurchaseIntent;
+  intent: FunnelStage;
   influence_score: number;
   is_influencer: boolean;
   community_id: number;
@@ -41,11 +41,11 @@ export interface Agent {
 }
 
 export interface SimulationMetrics {
-  strong_buy_pct: number;
-  likely_buy_pct: number;
-  neutral_pct: number;
-  unlikely_pct: number;
-  reject_pct: number;
+  unaware_pct: number;
+  aware_pct: number;
+  considering_pct: number;
+  rejected_pct: number;
+  purchased_pct: number;
   avg_opinion_score: number;
   top_objections: string[];
   top_motivators: string[];
@@ -105,7 +105,7 @@ export interface GraphNode {
   size: number;
   color: string;
   community: number;
-  intent: PurchaseIntent;
+  intent: FunnelStage;
   score: number;
   is_influencer: boolean;
 }
@@ -126,7 +126,7 @@ export interface NodeUpdate {
   id: string;
   color: string;
   score: number;
-  intent: PurchaseIntent;
+  intent: FunnelStage;
   size?: number;
   is_influencer?: boolean;
   community?: number;
@@ -135,8 +135,8 @@ export interface NodeUpdate {
 export interface OpinionEvent {
   agent_id: string;
   agent_name: string;
-  from_intent: PurchaseIntent;
-  to_intent: PurchaseIntent;
+  from_intent: FunnelStage;
+  to_intent: FunnelStage;
   from_score: number;
   to_score: number;
   influenced_by: string[];
@@ -153,12 +153,12 @@ export type WsMessage =
   | { type: "error"; message: string }
   | { type: "ping" };
 
-export const INTENT_COLORS: Record<PurchaseIntent, string> = {
-  strong_buy: "#22c55e",
-  likely_buy: "#86efac",
-  neutral: "#eab308",
-  unlikely: "#f97316",
-  reject: "#ef4444",
+export const INTENT_COLORS: Record<FunnelStage, string> = {
+  unaware: "#52525b",
+  aware: "#3b82f6",
+  considering: "#eab308",
+  rejected: "#ef4444",
+  purchased: "#22c55e",
 };
 
 export const COMMUNITY_COLORS = [
@@ -166,10 +166,10 @@ export const COMMUNITY_COLORS = [
   "#06b6d4", "#84cc16", "#f59e0b", "#10b981",
 ];
 
-export const INTENT_LABELS: Record<PurchaseIntent, string> = {
-  strong_buy: "Quer comprar",
-  likely_buy: "Talvez compre",
-  neutral: "Indiferente",
-  unlikely: "Improvável",
-  reject: "Não quer",
+export const INTENT_LABELS: Record<FunnelStage, string> = {
+  unaware: "Desconhece",
+  aware: "Consciente",
+  considering: "Considerando",
+  rejected: "Rejeitou",
+  purchased: "Comprou",
 };

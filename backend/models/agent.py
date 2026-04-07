@@ -4,33 +4,33 @@ from enum import Enum
 import uuid
 
 
-class PurchaseIntent(str, Enum):
-    STRONG_BUY = "strong_buy"
-    LIKELY_BUY = "likely_buy"
-    NEUTRAL = "neutral"
-    UNLIKELY = "unlikely"
-    REJECT = "reject"
+class FunnelStage(str, Enum):
+    UNAWARE = "unaware"
+    AWARE = "aware"
+    CONSIDERING = "considering"
+    REJECTED = "rejected"
+    PURCHASED = "purchased"
 
 
 INTENT_COLORS = {
-    PurchaseIntent.STRONG_BUY: "#22c55e",
-    PurchaseIntent.LIKELY_BUY: "#86efac",
-    PurchaseIntent.NEUTRAL: "#eab308",
-    PurchaseIntent.UNLIKELY: "#f97316",
-    PurchaseIntent.REJECT: "#ef4444",
+    FunnelStage.UNAWARE: "#52525b",      # Zinc 600
+    FunnelStage.AWARE: "#3b82f6",        # Blue 500
+    FunnelStage.CONSIDERING: "#eab308",  # Yellow 500
+    FunnelStage.REJECTED: "#ef4444",     # Red 500
+    FunnelStage.PURCHASED: "#22c55e",    # Green 500
 }
 
 
-def score_to_intent(score: float) -> PurchaseIntent:
-    if score >= 0.6:
-        return PurchaseIntent.STRONG_BUY
+def score_to_intent(score: float) -> FunnelStage:
+    if score >= 0.7:
+        return FunnelStage.PURCHASED
     if score >= 0.2:
-        return PurchaseIntent.LIKELY_BUY
+        return FunnelStage.CONSIDERING
     if score >= -0.2:
-        return PurchaseIntent.NEUTRAL
+        return FunnelStage.AWARE
     if score >= -0.6:
-        return PurchaseIntent.UNLIKELY
-    return PurchaseIntent.REJECT
+        return FunnelStage.UNAWARE
+    return FunnelStage.REJECTED
 
 
 class PersonaProfile(BaseModel):
@@ -64,7 +64,7 @@ class Agent(BaseModel):
     name: str
     profile: PersonaProfile
     opinion: OpinionState = Field(default_factory=OpinionState)
-    intent: PurchaseIntent = PurchaseIntent.NEUTRAL
+    intent: FunnelStage = FunnelStage.UNAWARE
 
     influence_score: float = 0.0
     is_influencer: bool = False

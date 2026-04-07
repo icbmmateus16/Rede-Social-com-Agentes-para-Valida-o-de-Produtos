@@ -2,7 +2,7 @@ import logging
 from collections import Counter
 from datetime import datetime
 from itertools import islice
-from models.agent import Agent, PurchaseIntent
+from models.agent import Agent, FunnelStage
 from models.simulation import Simulation, SimulationMetrics, SimulationReport
 from llm import groq_client
 from llm.prompts import build_report_prompt
@@ -17,11 +17,11 @@ def compute_metrics(agents: list[Agent]) -> SimulationMetrics:
     n = len(agents)
     counts = Counter(a.intent for a in agents)
 
-    strong_buy = counts.get(PurchaseIntent.STRONG_BUY, 0)
-    likely_buy = counts.get(PurchaseIntent.LIKELY_BUY, 0)
-    neutral = counts.get(PurchaseIntent.NEUTRAL, 0)
-    unlikely = counts.get(PurchaseIntent.UNLIKELY, 0)
-    reject = counts.get(PurchaseIntent.REJECT, 0)
+    purchased = counts.get(FunnelStage.PURCHASED, 0)
+    considering = counts.get(FunnelStage.CONSIDERING, 0)
+    aware = counts.get(FunnelStage.AWARE, 0)
+    unaware = counts.get(FunnelStage.UNAWARE, 0)
+    rejected = counts.get(FunnelStage.REJECTED, 0)
 
     avg_score = sum(a.opinion.score for a in agents) / n
 
@@ -41,14 +41,14 @@ def compute_metrics(agents: list[Agent]) -> SimulationMetrics:
     ]
     top_motivators = positive_reasonings[:5]
 
-    conversion_rate = (strong_buy + likely_buy * 0.5) / n * 100
+    conversion_rate = (purchased + considering * 0.5) / n * 100
 
     return SimulationMetrics(
-        strong_buy_pct=round(strong_buy / n * 100, 1),
-        likely_buy_pct=round(likely_buy / n * 100, 1),
-        neutral_pct=round(neutral / n * 100, 1),
-        unlikely_pct=round(unlikely / n * 100, 1),
-        reject_pct=round(reject / n * 100, 1),
+        purchased_pct=round(purchased / n * 100, 1),
+        considering_pct=round(considering / n * 100, 1),
+        aware_pct=round(aware / n * 100, 1),
+        unaware_pct=round(unaware / n * 100, 1),
+        rejected_pct=round(rejected / n * 100, 1),
         avg_opinion_score=round(avg_score, 3),
         top_objections=top_objections,
         top_motivators=top_motivators,
@@ -61,7 +61,7 @@ async def generate_report(simulation: Simulation, agents: list[Agent]) -> Simula
 
     # Sample reasonings from all intent buckets
     top_reasonings = []
-    for intent in PurchaseIntent:
+    for intent in FunnelStage:
         bucket = (a.opinion.reasoning for a in agents if a.intent == intent and a.opinion.reasoning)
         top_reasonings.extend(islice(bucket, 5))
 

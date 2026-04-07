@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import uuid
-from models.agent import Agent, PersonaProfile, OpinionState, PurchaseIntent, score_to_intent, INTENT_COLORS
+from models.agent import Agent, PersonaProfile, OpinionState, FunnelStage, score_to_intent, INTENT_COLORS
 from models.simulation import Simulation, ProductDefinition
 from llm import groq_client
 from llm.prompts import build_persona_prompt, build_opinion_prompt
@@ -142,7 +142,7 @@ async def _form_opinion_batch(
             else:
                 # Fallback: neutral opinion
                 agent.opinion = OpinionState(score=0.0, confidence=0.3, history=[0.0])
-                agent.intent = PurchaseIntent.NEUTRAL
+                agent.intent = FunnelStage.UNAWARE
                 agent.has_opinion = True
 
 

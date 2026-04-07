@@ -1,6 +1,6 @@
-from models.agent import Agent, score_to_intent, INTENT_COLORS
+from models.agent import Agent, FunnelStage, score_to_intent, INTENT_COLORS
 from config import SOCIAL_PRESSURE_WEIGHT
-
+import random
 
 def run_tick(
     agents: list[Agent],
@@ -8,12 +8,17 @@ def run_tick(
     tick: int,
 ) -> list[dict]:
     """
-    DeGroot-inspired opinion propagation.
-    Returns list of opinion events for the live feed.
+    Funnel Propagation Model (Awareness -> Consideration -> Purchase).
+    Incorporates Bayesian social updates and price resistance.
     """
     agent_map = {a.id: a for a in agents}
     new_scores: dict[str, float] = {}
     events: list[dict] = []
+
+    # Market Shock mechanics (10% chance per tick to have a viral shock for influencers)
+    market_shock = 0.0
+    if tick > 2 and random.random() < 0.15:
+        market_shock = random.uniform(-0.15, 0.25) # Positive or negative viral momentum
 
     for agent in agents:
         if not agent.has_opinion:
@@ -29,25 +34,35 @@ def run_tick(
             new_scores[agent.id] = agent.opinion.score
             continue
 
-        # Weighted neighbor influence (influencers pull harder)
+        # Weighted neighbor influence
         total_weight = 0.0
         weighted_sum = 0.0
         for neighbor in informed_neighbors:
-            w = 0.5 + neighbor.influence_score * 1.5
+            w = 0.5 + neighbor.influence_score * 2.0
             weighted_sum += neighbor.opinion.score * w
             total_weight += w
 
         neighbor_avg = weighted_sum / total_weight if total_weight > 0 else 0.0
 
-        # Bayesian-style update: confident agents resist change
+        # Bayesian-style update
         prior_weight = agent.opinion.confidence
         social_weight = (1.0 - prior_weight) * SOCIAL_PRESSURE_WEIGHT
 
-        # Influencers resist change more
         if agent.is_influencer:
-            social_weight *= 0.3
+            social_weight *= 0.2 # Influencers resist others heavily
+            
+        # Price and Risk friction logic (if score goes high, price friction pulls back)
+        price_friction = 0.0
+        if neighbor_avg > 0.2: # Consideration block
+            # If product perceived as "good", check if they can afford the risk
+            price_friction = (agent.opinion.price_sensitivity_score * 0.15) + (agent.profile.risk_tolerance * 0.05)
 
-        new_score = agent.opinion.score * (1.0 - social_weight) + neighbor_avg * social_weight
+        base_update = agent.opinion.score * (1.0 - social_weight) + neighbor_avg * social_weight
+        
+        # Apply shocks selectively
+        shock_effect = market_shock if agent.profile.digital_savviness > 0.5 else market_shock * 0.3
+        
+        new_score = base_update - price_friction + shock_effect
         new_score = max(-1.0, min(1.0, new_score))
         new_scores[agent.id] = new_score
 
@@ -63,7 +78,6 @@ def run_tick(
         agent.opinion.history.append(new_score)
         agent.intent = score_to_intent(new_score)
 
-        # Emit event if intent category changed
         if agent.intent != old_intent:
             agent.tick_of_change = tick
             neighbors = adjacency.get(agent.id, [])

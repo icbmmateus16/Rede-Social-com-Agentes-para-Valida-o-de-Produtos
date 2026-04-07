@@ -2,35 +2,17 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Simulation } from "../types";
+import { HeroPlayer } from "../components/remotion/HeroPlayer";
+import { motion } from "framer-motion";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Rascunho",
-  generating: "Gerando agentes...",
-  building: "Montando grafo...",
-  running: "Em execução",
+  generating: "Gerando",
+  building: "Montando",
+  running: "Rodando",
   paused: "Pausado",
-  complete: "Concluído",
-  error: "Erro",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  draft: "#6b7280",
-  generating: "#3b82f6",
-  building: "#8b5cf6",
-  running: "#22c55e",
-  paused: "#eab308",
-  complete: "#10b981",
-  error: "#ef4444",
-};
-
-const STATUS_ICONS: Record<string, string> = {
-  draft: "○",
-  generating: "⟳",
-  building: "⟳",
-  running: "▶",
-  paused: "⏸",
-  complete: "✓",
-  error: "✕",
+  complete: "Pronto",
+  error: "Falha",
 };
 
 export default function Home() {
@@ -44,193 +26,158 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Deletar esta simulação?")) return;
-    await api.deleteSimulation(id);
-    setSimulations((prev) => prev.filter((s) => s.id !== id));
-  };
-
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg-base)", color: "var(--text-primary)", padding: "2rem" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+    <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--bg-base)", overflow: "hidden" }}>
+      {/* Left Panel: Hero & Presentation (Remotion) */}
+      <div style={{
+        flex: 1,
+        position: "relative",
+        borderRight: "1px solid var(--border)",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "hidden",
+        backgroundColor: "var(--bg-surface)",
+      }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 0, opacity: 0.6 }}>
+          <HeroPlayer />
+        </div>
+        
+        {/* Vignette to ensure text readability */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "radial-gradient(circle at center, transparent 0%, var(--bg-surface) 90%)"
+        }} />
 
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "2.5rem" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: "var(--accent-dim)", border: "1px solid rgba(34,197,94,0.25)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "1rem",
-              }}>◎</div>
-              <h1 style={{ fontSize: "1.6rem", fontWeight: 800, margin: 0, letterSpacing: "-0.5px" }}>
-                Market<span style={{ color: "var(--accent)" }}>Sim</span>
-              </h1>
+        <div style={{ zIndex: 10, textAlign: "center", padding: "3rem", maxWidth: 600 }}>
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'inline-block', padding: '6px 12px', border: '1px solid var(--border-glow)', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--accent)', marginBottom: '1.5rem', background: 'var(--accent-dim)' }}>
+              Market<span style={{ color: "#fff" }}>Sim</span> B2B Engine v2.0
             </div>
-            <p style={{ color: "var(--text-muted)", margin: 0, fontSize: "0.88rem" }}>
-              Simule como o mercado reage ao seu produto — com agentes de IA
+            <h1 style={{ fontSize: "3.5rem", fontWeight: 800, margin: "0 0 1rem 0", lineHeight: 1.1, letterSpacing: "-0.04em" }}>
+              Simule a <br/><span style={{ color: "var(--accent)" }}>Adoção Reversa</span>.
+            </h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: "1.2rem", lineHeight: 1.6, marginBottom: "2.5rem", fontWeight: 400 }}>
+              Use Inteligência Artificial e Agentes Autônomos para validar a adesão do seu produto antes do go-to-market. 
             </p>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right Panel: The Console (Operations) */}
+      <div style={{
+        width: "500px",
+        flexShrink: 0,
+        backgroundColor: "var(--bg-base)",
+        display: "flex",
+        flexDirection: "column",
+        boxShadow: "-10px 0 30px rgba(0,0,0,0.5)",
+        zIndex: 5
+      }}>
+        {/* Header Terminal Style */}
+        <div style={{
+          padding: "1.5rem 2rem",
+          borderBottom: "1px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          backgroundColor: "var(--bg-elevated)",
+        }}>
+          <div className="panel-header">
+            <span className="status-dot">●</span> SYSTEM_READY
           </div>
           <button
             onClick={() => navigate("/new")}
             style={{
-              background: "var(--accent)",
-              color: "#000",
-              border: "none",
-              padding: "0.65rem 1.25rem",
-              borderRadius: "var(--radius-md)",
-              fontWeight: 700,
-              cursor: "pointer",
-              fontSize: "0.9rem",
-              display: "flex", alignItems: "center", gap: 6,
-              boxShadow: "0 0 20px rgba(34,197,94,0.2)",
+              background: "var(--accent)", color: "#000", border: "none",
+              padding: "0.5rem 1rem", borderRadius: "var(--radius-sm)",
+              fontWeight: 800, cursor: "pointer", fontSize: "0.85rem",
+              fontFamily: "var(--font-mono)",
+              boxShadow: "0 0 10px var(--accent-glow)",
             }}
           >
-            <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>+</span> Nova Simulação
+            [+ NEW_SIMULATION]
           </button>
         </div>
 
-        {loading ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {[1, 2].map(i => (
-              <div key={i} style={{
-                background: "var(--bg-surface)", border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)", padding: "1.25rem 1.5rem", height: 80,
-                opacity: 0.4,
-              }} />
-            ))}
+        {/* Console Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "2rem" }}>
+          <div style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontFamily: "var(--font-mono)", marginBottom: "1.5rem", textTransform: "uppercase" }}>
+            > Carregando histórico da base...
           </div>
-        ) : simulations.length === 0 ? (
-          <div style={{
-            textAlign: "center", padding: "5rem 2rem",
-            border: "1px dashed var(--border)", borderRadius: "var(--radius-lg)",
-          }}>
-            <div style={{ fontSize: "2.5rem", marginBottom: "1rem", opacity: 0.3 }}>◎</div>
-            <div style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: "1.05rem", marginBottom: 8 }}>
-              Nenhuma simulação ainda
-            </div>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", maxWidth: 320, margin: "0 auto 1.5rem", lineHeight: 1.6 }}>
-              Crie sua primeira simulação para ver como 50–500 pessoas reagem ao seu produto
-            </p>
-            <button
-              onClick={() => navigate("/new")}
-              style={{
-                background: "var(--accent-dim)", border: "1px solid rgba(34,197,94,0.3)",
-                color: "var(--accent)", padding: "0.6rem 1.4rem",
-                borderRadius: "var(--radius-sm)", cursor: "pointer",
-                fontWeight: 600, fontSize: "0.9rem",
-              }}
-            >
-              Criar primeira simulação
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            <div style={{ color: "var(--text-muted)", fontSize: "0.78rem", marginBottom: 4, paddingLeft: 2 }}>
-              {simulations.length} simulação{simulations.length !== 1 ? "ões" : ""}
-            </div>
-            {simulations.map((sim) => {
-              const color = STATUS_COLORS[sim.status] || "#6b7280";
-              const isComplete = sim.status === "complete";
-              const convRate = sim.metrics?.estimated_conversion_rate ?? 0;
-              return (
-                <div
-                  key={sim.id}
-                  onClick={() => navigate(`/simulation/${sim.id}`)}
-                  style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "1rem 1.25rem",
-                    cursor: "pointer",
-                    transition: "border-color 0.15s, background 0.15s",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#363640";
-                    e.currentTarget.style.background = "var(--bg-elevated)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border)";
-                    e.currentTarget.style.background = "var(--bg-surface)";
-                  }}
-                >
-                  {/* Conversion bar at bottom */}
-                  {isComplete && convRate > 0 && (
-                    <div style={{
-                      position: "absolute", bottom: 0, left: 0,
-                      height: 2, width: `${Math.min(convRate, 100)}%`,
-                      background: "var(--accent)", borderRadius: "0 99px 0 0",
-                      opacity: 0.6,
-                    }} />
-                  )}
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ color, fontSize: "0.8rem" }}>{STATUS_ICONS[sim.status]}</span>
-                        <span style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--text-primary)" }}>
-                          {sim.name}
-                        </span>
-                      </div>
-                      <div style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
-                        {sim.product.name} · R${sim.product.price_brl.toFixed(2)}/mês · {sim.agent_count} agentes
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0, marginLeft: "1rem", overflow: "visible" }}>
-                      {isComplete && (
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ color: "var(--accent)", fontWeight: 700, fontSize: "1rem" }}>
-                            {convRate.toFixed(1)}%
-                          </div>
-                          <div style={{ color: "var(--text-muted)", fontSize: "0.7rem" }}>conversão</div>
-                        </div>
-                      )}
-                      <span style={{
-                        background: color + "18",
-                        color,
-                        padding: "0.2rem 0.65rem",
-                        borderRadius: 99,
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        border: `1px solid ${color}30`,
-                        whiteSpace: "nowrap",
-                      }}>
+          {loading ? (
+            <div className="console-box" style={{ opacity: 0.5, borderStyle: "dashed" }}>
+              <div className="mono-text" style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                Fetching data... <span className="blinking-cursor">_</span>
+              </div>
+            </div>
+          ) : simulations.length === 0 ? (
+            <div className="console-box" style={{ borderStyle: "dashed", textAlign: "left", padding: "1.5rem" }}>
+              <div style={{ color: "var(--text-primary)", fontWeight: 700, marginBottom: "0.5rem", fontFamily: "var(--font-mono)" }}>Nenhum processo ativo.</div>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>
+                Inicie uma nova simulação para gerar um relatório analítico.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {simulations.map((sim) => {
+                const isComplete = sim.status === "complete";
+                const convRate = sim.metrics?.estimated_conversion_rate ?? 0;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    key={sim.id}
+                    onClick={() => navigate(`/simulation/${sim.id}`)}
+                    className="console-box"
+                    style={{
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      position: "relative",
+                      overflow: "hidden"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "var(--accent)";
+                      e.currentTarget.style.background = "var(--bg-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "var(--border)";
+                      e.currentTarget.style.background = "var(--bg-base)";
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+                      <span className="mono-text" style={{ fontSize: "0.9rem", color: "var(--text-primary)", fontWeight: 800 }}>
+                        {sim.name}
+                      </span>
+                      <span className="orange-tag" style={{ background: isComplete ? "var(--accent)" : "var(--bg-elevated)", color: isComplete ? "#000" : "var(--text-secondary)" }}>
                         {STATUS_LABELS[sim.status] || sim.status}
                       </span>
-                      <button
-                        onClick={(e) => handleDelete(sim.id, e)}
-                        style={{
-                          background: "transparent", border: "1px solid transparent",
-                          color: "var(--text-muted)", cursor: "pointer", fontSize: "0.9rem",
-                          padding: "0.2rem 0.4rem", borderRadius: 4,
-                          lineHeight: 1,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = "#ef4444";
-                          e.currentTarget.style.borderColor = "#ef444440";
-                          e.currentTarget.style.background = "#ef444410";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = "var(--text-muted)";
-                          e.currentTarget.style.borderColor = "transparent";
-                          e.currentTarget.style.background = "transparent";
-                        }}
-                        title="Deletar simulação"
-                      >
-                        ✕
-                      </button>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                    
+                    <div className="mono-text" style={{ color: "var(--text-muted)", fontSize: "0.75rem", marginBottom: "0.75rem" }}>
+                      ID: {sim.id.split('-')[0]} // AGENTS: {sim.agent_count} // PRODUCT: {sim.product.name}
+                    </div>
+
+                    {isComplete && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: "1rem" }}>
+                        <div style={{ flex: 1, height: 4, background: "var(--bg-elevated)", borderRadius: 2, overflow: "hidden" }}>
+                          <div style={{ width: `${Math.min(convRate, 100)}%`, height: "100%", background: "var(--accent)" }} />
+                        </div>
+                        <div className="mono-text" style={{ fontSize: "0.75rem", color: "var(--accent)", fontWeight: 800 }}>
+                          CONV: {convRate.toFixed(1)}%
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

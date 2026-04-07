@@ -41,11 +41,11 @@ class ProductDefinition(BaseModel):
 
 
 class SimulationMetrics(BaseModel):
-    strong_buy_pct: float = 0.0
-    likely_buy_pct: float = 0.0
-    neutral_pct: float = 0.0
-    unlikely_pct: float = 0.0
-    reject_pct: float = 0.0
+    unaware_pct: float = 0.0
+    aware_pct: float = 0.0
+    considering_pct: float = 0.0
+    rejected_pct: float = 0.0
+    purchased_pct: float = 0.0
     avg_opinion_score: float = 0.0
     top_objections: list[str] = []
     top_motivators: list[str] = []

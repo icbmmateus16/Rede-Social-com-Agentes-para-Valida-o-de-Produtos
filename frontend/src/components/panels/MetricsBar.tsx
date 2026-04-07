@@ -14,11 +14,11 @@ interface Props {
 
 export default function MetricsBar({ metrics, tick, totalTicks, isRunning, onRun, onPause, status }: Props) {
   const bars = [
-    { key: "strong_buy", pct: metrics?.strong_buy_pct ?? 0, label: INTENT_LABELS.strong_buy },
-    { key: "likely_buy", pct: metrics?.likely_buy_pct ?? 0, label: INTENT_LABELS.likely_buy },
-    { key: "neutral", pct: metrics?.neutral_pct ?? 0, label: INTENT_LABELS.neutral },
-    { key: "unlikely", pct: metrics?.unlikely_pct ?? 0, label: INTENT_LABELS.unlikely },
-    { key: "reject", pct: metrics?.reject_pct ?? 0, label: INTENT_LABELS.reject },
+    { key: "purchased", pct: metrics?.purchased_pct ?? 0, label: INTENT_LABELS.purchased },
+    { key: "considering", pct: metrics?.considering_pct ?? 0, label: INTENT_LABELS.considering },
+    { key: "aware", pct: metrics?.aware_pct ?? 0, label: INTENT_LABELS.aware },
+    { key: "unaware", pct: metrics?.unaware_pct ?? 0, label: INTENT_LABELS.unaware },
+    { key: "rejected", pct: metrics?.rejected_pct ?? 0, label: INTENT_LABELS.rejected },
   ] as const;
 
   const progressPct = totalTicks > 0 ? (tick / totalTicks) * 100 : 0;

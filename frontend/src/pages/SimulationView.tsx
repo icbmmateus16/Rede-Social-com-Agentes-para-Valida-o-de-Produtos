@@ -10,8 +10,8 @@ import { api } from "../api/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 const EMPTY_METRICS = {
-  strong_buy_pct: 0, likely_buy_pct: 0, neutral_pct: 0,
-  unlikely_pct: 0, reject_pct: 0, avg_opinion_score: 0,
+  purchased_pct: 0, considering_pct: 0, aware_pct: 0,
+  unaware_pct: 0, rejected_pct: 0, avg_opinion_score: 0,
   top_objections: [], top_motivators: [], estimated_conversion_rate: 0,
 };
 
@@ -275,9 +275,9 @@ export default function SimulationView() {
               const safeName = latest?.agent_name || "Agente";
               const name = safeName.split(" ")[0];
               const connections = latest?.influenced_by?.length ?? 0;
-              const safeToIntent = latest?.to_intent || "neutral";
-              const toLabel = { strong_buy: "quer comprar", likely_buy: "talvez compre", neutral: "ficou indiferente", unlikely: "acha improvável", reject: "não quer" }[safeToIntent] ?? "";
-              const toColor = { strong_buy: "#22c55e", likely_buy: "#86efac", neutral: "#eab308", unlikely: "#f97316", reject: "#ef4444" }[safeToIntent] ?? "#fff";
+              const safeToIntent = latest?.to_intent || "unaware";
+              const toLabel = { purchased: "comprou", considering: "está considerando", aware: "descobriu", unaware: "desconhece", rejected: "rejeitou" }[safeToIntent] ?? "";
+              const toColor = { purchased: "#22c55e", considering: "#eab308", aware: "#3b82f6", unaware: "#52525b", rejected: "#ef4444" }[safeToIntent] ?? "#fff";
               return (
                 <motion.span 
                   key={latest.agent_id + latest.tick}
@@ -459,11 +459,11 @@ export default function SimulationView() {
                   {colorMode === "intent" ? "Mapa de Opiniões" : "Comunidades"}
                 </div>
                 {([
-                  { color: "#22c55e", label: "Comprar", key: "strong_buy_pct" },
-                  { color: "#86efac", label: "Talvez", key: "likely_buy_pct" },
-                  { color: "#eab308", label: "Neutro", key: "neutral_pct" },
-                  { color: "#f97316", label: "Improvável", key: "unlikely_pct" },
-                  { color: "#ef4444", label: "Rejeita", key: "reject_pct" },
+                  { color: "#22c55e", label: "Comprou", key: "purchased_pct" },
+                  { color: "#eab308", label: "Considera", key: "considering_pct" },
+                  { color: "#3b82f6", label: "Consciente", key: "aware_pct" },
+                  { color: "#52525b", label: "Desconhece", key: "unaware_pct" },
+                  { color: "#ef4444", label: "Rejeita", key: "rejected_pct" },
                 ] as const).map(({ color, label, key }) => {
                   const pct = metrics ? (metrics as any)[key] as number : 0;
                   const agentCount = simulation?.agent_count ?? 0;
