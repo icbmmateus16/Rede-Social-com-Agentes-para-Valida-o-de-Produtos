@@ -215,102 +215,173 @@ ax.legend(loc='upper right')
 save(fig, 'chart_7_decay.png')
 
 
-# ── Animated GIF: Opinion Propagation on Network ───────────────────────────────
-print("  Generating anim_propagation.gif (may take ~30s)...")
+# ── Animated GIF v2: Opinion Propagation on Network ───────────────────────────
+print("  Generating anim_propagation.gif (enhanced, ~45s)...")
 
-N_NODES = 80
-G_anim = nx.watts_strogatz_graph(N_NODES, 6, 0.15, seed=7)
-pos_anim = nx.spring_layout(G_anim, seed=7, k=0.6)
+N_NODES = 90
+G_anim   = nx.watts_strogatz_graph(N_NODES, 6, 0.15, seed=42)
+pos_anim = nx.spring_layout(G_anim, seed=42, k=1.4, iterations=120)
 
-STATE_COLORS = {
-    'unaware':    C_RED,
-    'aware':      C_BLUE,
-    'considering':C_YELLOW,
-    'adopted':    C_GREEN,
-    'rejected':   C_GRAY,
+# State color palette
+SC = {
+    'unaware':     '#2d3748',   # dark slate
+    'aware':       '#3b82f6',   # blue
+    'considering': '#eab308',   # amber
+    'adopted':     '#22c55e',   # green
+    'rejected':    '#111827',   # near-black
 }
 
-# Seed the initial state: top-5 degree nodes start as "aware"
-degrees_anim = dict(G_anim.degree())
-influencers  = sorted(degrees_anim, key=degrees_anim.get, reverse=True)[:5]
-init_states  = {n: ('aware' if n in influencers else 'unaware') for n in G_anim.nodes()}
+# Node sizes based on degree (influencer hubs are larger)
+deg       = dict(G_anim.degree())
+top6      = set(sorted(deg, key=deg.get, reverse=True)[:6])
+next6     = set(sorted(deg, key=deg.get, reverse=True)[6:12])
 
-def propagate(states, rng):
+nodes_order = list(G_anim.nodes())
+node_to_idx = {n: i for i, n in enumerate(nodes_order)}
+pos_arr     = np.array([[pos_anim[n][0], pos_anim[n][1]] for n in nodes_order])
+size_arr    = np.array([220 if n in top6 else (130 if n in next6 else 65) for n in nodes_order])
+
+# Initial states: top influencers start 'considering', next tier 'aware', rest 'unaware'
+init_states = {}
+for n in G_anim.nodes():
+    if n in top6:   init_states[n] = 'considering'
+    elif n in next6: init_states[n] = 'aware'
+    else:            init_states[n] = 'unaware'
+
+def propagate_v2(states, rng):
     new = states.copy()
     for node in G_anim.nodes():
         nbrs = list(G_anim.neighbors(node))
-        if not nbrs:
-            continue
+        if not nbrs: continue
         ns = [states[n] for n in nbrs]
         cur = states[node]
-        n_adopted     = ns.count('adopted')
-        n_considering = ns.count('considering')
-        n_aware       = ns.count('aware')
-        n_rejected    = ns.count('rejected')
+        n_ad  = ns.count('adopted')
+        n_co  = ns.count('considering')
+        n_aw  = ns.count('aware')
+        n_rj  = ns.count('rejected')
+        k     = len(nbrs)
 
         if cur == 'unaware':
-            social = (n_aware + n_considering * 1.5 + n_adopted * 2.5) / len(nbrs)
-            if rng.random() < min(0.18 * social, 0.80):
+            social = (n_aw * 0.4 + n_co * 1.2 + n_ad * 2.2) / k
+            if rng.random() < min(0.28 * social, 0.88):
                 new[node] = 'aware'
         elif cur == 'aware':
-            social = (n_considering + n_adopted * 1.8) / len(nbrs)
-            if rng.random() < min(0.22 * social, 0.70):
+            # 13% base spontaneous + social boost
+            social = (n_co + n_ad * 1.8) / k
+            if rng.random() < 0.13 + 0.32 * social:
                 new[node] = 'considering'
         elif cur == 'considering':
-            social_pos = n_adopted / len(nbrs)
-            social_neg = n_rejected / len(nbrs)
-            if rng.random() < 0.30 + 0.25 * social_pos:
+            social_pos = (n_ad * 2.0 + n_co * 0.5) / k
+            social_neg = (n_rj * 1.5) / k
+            if rng.random() < 0.30 + 0.38 * social_pos:
                 new[node] = 'adopted'
-            elif social_neg > social_pos and rng.random() < 0.12:
+            elif social_neg > 0.45 and rng.random() < 0.10:
                 new[node] = 'rejected'
     return new
 
-# Pre-compute all frames
-N_FRAMES = 22
+N_FRAMES = 28
 all_states = [init_states]
-cur = init_states
+cur_s = init_states
 for t in range(N_FRAMES - 1):
-    cur = propagate(cur, np.random.RandomState(42 + t))
-    all_states.append(cur)
+    cur_s = propagate_v2(cur_s, np.random.RandomState(7 + t))
+    all_states.append(cur_s)
 
-edges_list = list(G_anim.edges())
-edge_xs = [[pos_anim[u][0], pos_anim[v][0], None] for u, v in edges_list]
-edge_ys = [[pos_anim[u][1], pos_anim[v][1], None] for u, v in edges_list]
+edges_arr = list(G_anim.edges())
 
-fig_anim, ax_anim = plt.subplots(figsize=(10, 7), facecolor=BG)
-ax_anim.set_facecolor(PANEL)
-ax_anim.axis('off')
+# Legend (built once, reused)
+leg_order   = ['adopted', 'considering', 'aware', 'unaware', 'rejected']
+leg_labels  = {'adopted': 'Adopted', 'considering': 'Considering',
+               'aware': 'Aware', 'unaware': 'Unaware', 'rejected': 'Rejected'}
+leg_patches = [mpatches.Patch(color=SC[s], label=leg_labels[s]) for s in leg_order]
 
-legend_patches = [mpatches.Patch(color=v, label=k.capitalize()) for k, v in STATE_COLORS.items()]
-ax_anim.legend(handles=legend_patches, loc='lower right', fontsize=10,
-               facecolor='#111114', edgecolor=GRID)
+fig_anim = plt.figure(figsize=(12, 8.5), facecolor=BG)
+ax_anim  = fig_anim.add_axes([0, 0.09, 1, 0.88], facecolor=BG)
+ax_bar   = fig_anim.add_axes([0.06, 0.025, 0.88, 0.038], facecolor=BG)
 
-scat = ax_anim.scatter([], [], s=90, zorder=3)
-for ex, ey in zip(edge_xs, edge_ys):
-    ax_anim.plot([ex[0], ex[1]], [ey[0], ey[1]], color=GRID, alpha=0.45, linewidth=0.6, zorder=1)
+def draw_frame(frame):
+    ax_anim.cla()
+    ax_anim.axis('off')
+    ax_bar.cla()
+    ax_bar.axis('off')
 
-title_text = ax_anim.set_title("", fontsize=12, pad=10, fontweight='bold', color=TEXT)
+    sf   = all_states[frame]
+    prev = all_states[max(0, frame - 1)]
+    counts = {s: sum(1 for v in sf.values() if v == s) for s in SC}
 
-def update_anim(frame):
-    states_f = all_states[frame]
-    xs  = [pos_anim[n][0] for n in G_anim.nodes()]
-    ys  = [pos_anim[n][1] for n in G_anim.nodes()]
-    clr = [STATE_COLORS[states_f[n]] for n in G_anim.nodes()]
-    scat.set_offsets(np.column_stack([xs, ys]))
-    scat.set_color(clr)
-    counts = {s: sum(1 for v in states_f.values() if v == s) for s in STATE_COLORS}
-    title_text.set_text(
-        f"Tick {frame:02d}  ·  "
-        f"Adopted {counts['adopted']}  |  "
-        f"Considering {counts['considering']}  |  "
-        f"Aware {counts['aware']}  |  "
-        f"Rejected {counts['rejected']}"
+    just_changed   = {n for n in nodes_order if sf[n] != prev[n]}
+    adopted_idx    = [node_to_idx[n] for n in nodes_order if sf[n] == 'adopted']
+    consid_idx     = [node_to_idx[n] for n in nodes_order if sf[n] == 'considering']
+    changed_idx    = [node_to_idx[n] for n in just_changed]
+
+    # ── Edges ─────────────────────────────────────────────────────────────────
+    for u, v in edges_arr:
+        su, sv = sf[u], sf[v]
+        if su == 'adopted' and sv == 'adopted':
+            ec, al, lw = C_GREEN,  0.30, 1.1
+        elif 'adopted' in (su, sv) or ('considering' in (su, sv)):
+            ec, al, lw = C_YELLOW, 0.15, 0.7
+        elif 'aware' in (su, sv):
+            ec, al, lw = C_BLUE,   0.10, 0.5
+        else:
+            ec, al, lw = '#1e2330', 0.30, 0.4
+        ax_anim.plot([pos_anim[u][0], pos_anim[v][0]],
+                     [pos_anim[u][1], pos_anim[v][1]],
+                     color=ec, alpha=al, linewidth=lw, zorder=1, solid_capstyle='round')
+
+    # ── Glow layers ───────────────────────────────────────────────────────────
+    if adopted_idx:
+        ap = pos_arr[adopted_idx]
+        as_ = size_arr[adopted_idx]
+        ax_anim.scatter(ap[:, 0], ap[:, 1], s=as_ * 7, c=C_GREEN,  alpha=0.04, zorder=2, linewidths=0)
+        ax_anim.scatter(ap[:, 0], ap[:, 1], s=as_ * 3, c=C_GREEN,  alpha=0.10, zorder=2, linewidths=0)
+    if consid_idx:
+        cp = pos_arr[consid_idx]
+        cs = size_arr[consid_idx]
+        ax_anim.scatter(cp[:, 0], cp[:, 1], s=cs * 4, c=C_YELLOW, alpha=0.07, zorder=2, linewidths=0)
+
+    # ── Main nodes ────────────────────────────────────────────────────────────
+    node_colors = [SC[sf[n]] for n in nodes_order]
+    ec_colors   = ['#ffffff' if n in top6 else '#ffffff44' for n in nodes_order]
+    ax_anim.scatter(pos_arr[:, 0], pos_arr[:, 1],
+                    s=size_arr, c=node_colors, alpha=0.96, zorder=3,
+                    linewidths=0.7, edgecolors='#ffffff33')
+
+    # ── Pulse ring on freshly transitioned nodes ───────────────────────────────
+    if changed_idx:
+        ax_anim.scatter(pos_arr[changed_idx, 0], pos_arr[changed_idx, 1],
+                        s=size_arr[changed_idx] * 4, c='none',
+                        edgecolors='white', linewidths=1.8, alpha=0.55, zorder=4)
+
+    # ── Title ─────────────────────────────────────────────────────────────────
+    adopted_pct = 100 * counts['adopted'] / N_NODES
+    ax_anim.set_title(
+        f"Tick  {frame:02d} / {N_FRAMES-1}     "
+        f"Adopted  {counts['adopted']} ({adopted_pct:.0f}%)     "
+        f"Considering  {counts['considering']}     "
+        f"Aware  {counts['aware']}     "
+        f"Rejected  {counts['rejected']}",
+        fontsize=10.5, pad=8, fontweight='bold', color=TEXT
     )
-    return scat, title_text
+    ax_anim.legend(handles=leg_patches, loc='lower right', fontsize=9,
+                   facecolor='#0a0a0d', edgecolor='#1e1e24', labelcolor=TEXT,
+                   framealpha=0.92, borderpad=0.9, labelspacing=0.4)
 
-anim = FuncAnimation(fig_anim, update_anim, frames=N_FRAMES, interval=500, blit=False)
-writer = PillowWriter(fps=2)
-anim.save(os.path.join(static_dir, 'anim_propagation.gif'), writer=writer, dpi=100)
+    # ── Stacked progress bar ──────────────────────────────────────────────────
+    ax_bar.set_xlim(0, N_NODES)
+    ax_bar.set_ylim(0, 1)
+    x = 0
+    for state, color in [('adopted', C_GREEN), ('considering', C_YELLOW),
+                          ('aware', C_BLUE), ('unaware', '#2d3748'), ('rejected', '#111827')]:
+        w = counts[state]
+        if w > 0:
+            ax_bar.barh(0.5, w, left=x, height=0.85, color=color, alpha=0.88, linewidth=0)
+            x += w
+    # Tick cursor
+    ax_bar.axvline(N_NODES * frame / (N_FRAMES - 1), color='white', alpha=0.35, linewidth=1.2)
+
+anim = FuncAnimation(fig_anim, draw_frame, frames=N_FRAMES, interval=400, blit=False)
+writer = PillowWriter(fps=2.5)
+anim.save(os.path.join(static_dir, 'anim_propagation.gif'), writer=writer, dpi=108)
 plt.close(fig_anim)
 print("  OK anim_propagation.gif")
 
