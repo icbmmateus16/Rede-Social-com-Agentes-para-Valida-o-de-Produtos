@@ -1,108 +1,317 @@
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import seaborn as sns
+import matplotlib.patches as mpatches
+from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
-import pandas as pd
-import os
 import networkx as nx
+import os
 
-plt.style.use('dark_background')
-sns.set_theme(style="darkgrid", rc={
-    "axes.facecolor": "#0c0c0e",
-    "figure.facecolor": "#060608",
-    "grid.color": "#222222",
-    "text.color": "#e2e8f0",
-    "axes.labelcolor": "#a1a1aa",
-    "xtick.color": "#a1a1aa",
-    "ytick.color": "#a1a1aa",
-    "font.family": "sans-serif"
+# ── Style ──────────────────────────────────────────────────────────────────────
+BG     = "#060608"
+PANEL  = "#0c0c0e"
+GRID   = "#1a1a1e"
+TEXT   = "#e2e8f0"
+MUTED  = "#71717a"
+
+C_GREEN    = "#22c55e"
+C_YELLOW   = "#eab308"
+C_BLUE     = "#3b82f6"
+C_RED      = "#ef4444"
+C_PURPLE   = "#8b5cf6"
+C_ORANGE   = "#f97316"
+C_GRAY     = "#52525b"
+C_CYAN     = "#06b6d4"
+
+plt.rcParams.update({
+    "figure.facecolor":    BG,
+    "axes.facecolor":      PANEL,
+    "axes.edgecolor":      GRID,
+    "grid.color":          GRID,
+    "text.color":          TEXT,
+    "axes.labelcolor":     MUTED,
+    "xtick.color":         MUTED,
+    "ytick.color":         MUTED,
+    "axes.grid":           True,
+    "grid.linestyle":      "--",
+    "grid.alpha":          0.4,
+    "font.family":         "DejaVu Sans",
+    "legend.facecolor":    "#111114",
+    "legend.edgecolor":    GRID,
+    "legend.labelcolor":   TEXT,
 })
 
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'static')
 os.makedirs(static_dir, exist_ok=True)
 
 np.random.seed(42)
+TICKS = np.arange(0, 30)
 
-# --- Gráfico 1: Funil (Já existia) ---
-ticks = np.arange(0, 30)
-unaware = 100 * np.exp(-0.35 * ticks)
-aware = 100 * (1 - np.exp(-0.35 * ticks)) * np.exp(-0.15 * ticks)
-considering = 100 * (1 - np.exp(-0.20 * ticks)) * np.exp(-0.10 * ticks)
-adopted = 100 * (1 - np.exp(-0.12 * ticks))
 
-fig, ax = plt.subplots(figsize=(10, 5), dpi=300)
-ax.fill_between(ticks, 0, adopted, color='#22c55e', alpha=0.4, label='Adopted')
-ax.plot(ticks, adopted, color='#22c55e', linewidth=2.5)
-ax.fill_between(ticks, adopted, adopted + considering, color='#eab308', alpha=0.4, label='Considering')
-ax.fill_between(ticks, adopted + considering, adopted + considering + aware, color='#3b82f6', alpha=0.4, label='Aware')
-ax.fill_between(ticks, adopted + considering + aware, 100, color='#ef4444', alpha=0.2, label='Rejected')
-ax.set_title("1. Propagação B2B (Massa do Funil por Tick)", fontsize=14, pad=15, fontweight='bold', color="#ffffff")
-ax.legend(facecolor='#16161a', loc='lower right')
-plt.tight_layout()
-plt.savefig(os.path.join(static_dir, 'chart_1_funnel.png'), transparent=False)
-plt.close()
+def save(fig, name):
+    fig.savefig(os.path.join(static_dir, name), dpi=150, bbox_inches='tight', facecolor=BG)
+    plt.close(fig)
+    print(f"  OK {name}")
 
-# --- Gráfico 2: Bayesian Psychometrics (Já existia) ---
-n_agents = 500
-risk_tolerance = np.random.normal(loc=0.6, scale=0.2, size=n_agents)
-price_sens = np.random.normal(loc=0.5, scale=0.25, size=n_agents)
-score = np.clip((0.7 * risk_tolerance) - (0.4 * price_sens) + np.random.normal(0, 0.1, n_agents), -1, 1)
 
-df = pd.DataFrame({'Preço': price_sens, 'Risco': risk_tolerance, 'Score': score})
-fig2, ax2 = plt.subplots(figsize=(10, 5), dpi=300)
-sns.scatterplot(data=df, x='Preço', y='Risco', hue='Score', palette='RdYlGn', s=80, alpha=0.8, ax=ax2, legend=False)
-sns.kdeplot(data=df, x='Preço', y='Risco', levels=5, color="#ff4500", linewidths=1.5, alpha=0.6, ax=ax2)
-ax2.set_title("2. Mapa Psicométrico B2B (Sensibilidade Preço vs Tolerância Risco)", fontsize=14, pad=15, fontweight='bold', color="#ffffff")
-plt.tight_layout()
-plt.savefig(os.path.join(static_dir, 'chart_2_bayes.png'), transparent=False)
-plt.close()
+# ── Chart 1: Funnel Dynamics ───────────────────────────────────────────────────
+unaware    = 100 * np.exp(-0.35 * TICKS)
+aware      = 100 * (1 - np.exp(-0.35 * TICKS)) * np.exp(-0.15 * TICKS)
+considering= 100 * (1 - np.exp(-0.20 * TICKS)) * np.exp(-0.10 * TICKS)
+adopted    = 100 * (1 - np.exp(-0.12 * TICKS))
 
-# --- Gráfico 3: Choques de Mercado (Picos de Adoção) ---
-market_reaction = np.diff(adopted, prepend=0)
+fig, ax = plt.subplots(figsize=(11, 5))
+ax.fill_between(TICKS, 0,               adopted,                       color=C_GREEN,  alpha=0.35, label='Adopted')
+ax.plot        (TICKS, adopted,          color=C_GREEN,  linewidth=2.5)
+ax.fill_between(TICKS, adopted,          adopted + considering,         color=C_YELLOW, alpha=0.35, label='Considering')
+ax.fill_between(TICKS, adopted+considering, adopted+considering+aware,  color=C_BLUE,   alpha=0.35, label='Aware')
+ax.fill_between(TICKS, adopted+considering+aware, 100,                  color=C_RED,    alpha=0.15, label='Unaware')
+ax.set_title("Sales Funnel Propagation  ·  Opinion Diffusion per Tick", fontsize=13, pad=12, fontweight='bold', color=TEXT)
+ax.set_xlabel("Propagation Tick")
+ax.set_ylabel("Agent Population (%)")
+ax.legend(loc='lower right')
+ax.set_xlim(0, 29)
+save(fig, 'chart_1_funnel.png')
+
+
+# ── Chart 2: Psychometric Scatter ──────────────────────────────────────────────
+n = 500
+risk   = np.random.normal(0.6, 0.2,  n).clip(0, 1)
+price  = np.random.normal(0.5, 0.25, n).clip(0, 1)
+score  = np.clip(0.7 * risk - 0.4 * price + np.random.normal(0, 0.1, n), -1, 1)
+
+cmap = LinearSegmentedColormap.from_list("opinion", [C_RED, C_YELLOW, C_GREEN])
+fig, ax = plt.subplots(figsize=(11, 5))
+sc = ax.scatter(price, risk, c=score, cmap=cmap, s=60, alpha=0.75, linewidths=0)
+cb = fig.colorbar(sc, ax=ax, pad=0.01)
+cb.set_label("Opinion Score", color=MUTED)
+cb.ax.yaxis.set_tick_params(color=MUTED)
+plt.setp(cb.ax.yaxis.get_ticklabels(), color=MUTED)
+
+# KDE overlay (manual, no seaborn/pandas)
+from matplotlib.patches import Ellipse
+for cx, cy, w, h in [(0.35, 0.75, 0.25, 0.30), (0.65, 0.40, 0.30, 0.25)]:
+    for scale in [0.5, 1.0, 1.5]:
+        e = Ellipse((cx, cy), w*scale, h*scale, angle=15, linewidth=1.2,
+                    edgecolor=C_ORANGE, facecolor='none', alpha=0.5/scale)
+        ax.add_patch(e)
+
+ax.set_xlabel("Price Sensitivity")
+ax.set_ylabel("Risk Tolerance")
+ax.set_title("Psychometric B2B Map  ·  Bayesian Agent Distribution", fontsize=13, pad=12, fontweight='bold', color=TEXT)
+save(fig, 'chart_2_bayes.png')
+
+
+# ── Chart 3: Market Shocks ─────────────────────────────────────────────────────
+delta = np.diff(adopted, prepend=0)
 shock_ticks = [5, 12, 18, 25]
 for s in shock_ticks:
-    market_reaction[s] += np.random.uniform(2, 5)  # Simulate viral influence event
-    
-fig3, ax3 = plt.subplots(figsize=(10, 5), dpi=300)
-ax3.plot(ticks, market_reaction, color='#8b5cf6', linewidth=2.5, marker='o')
+    delta[s] += np.random.uniform(2.5, 5.5)
+
+fig, ax = plt.subplots(figsize=(11, 5))
+ax.plot(TICKS, delta, color=C_PURPLE, linewidth=2.5, zorder=3)
+ax.fill_between(TICKS, 0, delta, color=C_PURPLE, alpha=0.15)
 for s in shock_ticks:
-    ax3.axvline(x=s, color='#ff4500', linestyle='--', alpha=0.7)
-    ax3.annotate('Market Shock (Influencer)', xy=(s, market_reaction[s]), xytext=(s-2, market_reaction[s]+2),
-                 arrowprops=dict(facecolor='#ff4500', shrink=0.05), color='#ff4500', fontsize=9)
-ax3.set_title("3. Elasticidade Social: Resposta a 'Market Shocks'", fontsize=14, pad=15, fontweight='bold', color="#ffffff")
-ax3.set_xlabel("Ticks")
-ax3.set_ylabel("Nova Adoção (Δ)")
-plt.tight_layout()
-plt.savefig(os.path.join(static_dir, 'chart_3_shocks.png'), transparent=False)
-plt.close()
+    ax.axvline(x=s, color=C_RED, linestyle='--', alpha=0.6, linewidth=1.5)
+    ax.annotate('Influencer Shock', xy=(s, delta[s]),
+                xytext=(s + 0.5, delta[s] + 1.5),
+                arrowprops=dict(arrowstyle='->', color=C_RED, lw=1.5),
+                color=C_RED, fontsize=8, fontweight='bold')
+ax.set_title("Social Elasticity  ·  Adoption Response to Market Shocks", fontsize=13, pad=12, fontweight='bold', color=TEXT)
+ax.set_xlabel("Propagation Tick")
+ax.set_ylabel("New Adoptions (Δ per tick)")
+save(fig, 'chart_3_shocks.png')
 
-# --- Gráfico 4: Curva de Atrito de Preço ---
-prices = np.linspace(10, 500, 50)
-adoption_prob = 1 / (1 + np.exp(0.02 * (prices - 250))) # Logistic friction
-fig4, ax4 = plt.subplots(figsize=(10, 5), dpi=300)
-ax4.plot(prices, adoption_prob * 100, color='#f97316', linewidth=3)
-ax4.fill_between(prices, 0, adoption_prob * 100, color='#f97316', alpha=0.2)
-ax4.axhline(y=50, color='#64748b', linestyle=':')
-ax4.axvline(x=250, color='#64748b', linestyle=':')
-ax4.text(260, 55, 'Ponto Crítico de Fricção', color='#94a3b8')
-ax4.set_title("4. Atrito de Precificação: Elasticidade da Probabilidade de Adoção", fontsize=14, pad=15, fontweight='bold', color="#ffffff")
-ax4.set_xlabel("Preço do Produto ($)")
-ax4.set_ylabel("Máx. Adoção Projetada (%)")
-plt.tight_layout()
-plt.savefig(os.path.join(static_dir, 'chart_4_friction.png'), transparent=False)
-plt.close()
 
-# --- Gráfico 5: Topologia de Rede ---
-G = nx.barabasi_albert_graph(150, 2)
-fig5, ax5 = plt.subplots(figsize=(10, 5), dpi=300)
-pos = nx.spring_layout(G, seed=42)
-nx.draw_networkx_nodes(G, pos, node_size=30, node_color='#0ea5e9', alpha=0.8, ax=ax5)
-nx.draw_networkx_edges(G, pos, edge_color='#ffffff', alpha=0.1, ax=ax5)
-ax5.set_title("5. Renderezição da Topologia Social do Grafo", fontsize=14, pad=15, fontweight='bold', color="#ffffff")
-ax5.axis('off')
-plt.tight_layout()
-plt.savefig(os.path.join(static_dir, 'chart_5_topology.png'), transparent=False)
-plt.close()
+# ── Chart 4: Price Friction Curve ──────────────────────────────────────────────
+prices = np.linspace(10, 500, 200)
+prob   = 1 / (1 + np.exp(0.02 * (prices - 250)))
 
-print("5 novos graficos complexos gerados em static/")
+fig, ax = plt.subplots(figsize=(11, 5))
+ax.plot(prices, prob * 100, color=C_ORANGE, linewidth=3)
+ax.fill_between(prices, 0, prob * 100, color=C_ORANGE, alpha=0.18)
+ax.axhline(50, color=MUTED, linestyle=':', linewidth=1.2)
+ax.axvline(250, color=MUTED, linestyle=':', linewidth=1.2)
+ax.text(260, 52, 'Inflection Point', color=MUTED, fontsize=9)
+ax.set_title("Logistic Price Friction  ·  Adoption Probability vs. Ticket", fontsize=13, pad=12, fontweight='bold', color=TEXT)
+ax.set_xlabel("Product Price ($)")
+ax.set_ylabel("Max Projected Adoption (%)")
+save(fig, 'chart_4_friction.png')
+
+
+# ── Chart 5: Network Topology ──────────────────────────────────────────────────
+G5 = nx.watts_strogatz_graph(120, 6, 0.15, seed=42)
+pos5 = nx.spring_layout(G5, seed=42, k=0.5)
+
+degree = np.array([d for _, d in G5.degree()])
+node_colors5 = [C_CYAN if d >= 8 else C_BLUE for d in degree]
+node_sizes5  = [120 if d >= 8 else 40 for d in degree]
+
+fig, ax = plt.subplots(figsize=(11, 7), facecolor=BG)
+ax.set_facecolor(PANEL)
+nx.draw_networkx_edges(G5, pos5, edge_color=GRID, alpha=0.5, ax=ax, width=0.6)
+nx.draw_networkx_nodes(G5, pos5, node_color=node_colors5, node_size=node_sizes5, alpha=0.9, ax=ax)
+ax.set_title("Watts-Strogatz Small-World Topology  ·  Influencer Hubs Highlighted", fontsize=13, pad=12, fontweight='bold', color=TEXT)
+ax.axis('off')
+save(fig, 'chart_5_topology.png')
+
+
+# ── Chart 6: Homophily Weight Heatmap ─────────────────────────────────────────
+# Visualises _homophily_weight(a, b): base 0.5 + score * 0.5
+# score = age_bonus + income_bonus + interest_bonus (max 1.0)
+age_deltas   = np.arange(0, 45, 5)     # |age_a - age_b|
+shared_ints  = np.arange(0, 5)         # number of shared interests
+
+income_match_cases = {"Same Income": 0.3, "Diff Income": 0.0}
+fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+
+for ax, (label, inc_bonus) in zip(axes, income_match_cases.items()):
+    Z = np.zeros((len(shared_ints), len(age_deltas)))
+    for i, si in enumerate(shared_ints):
+        for j, ad in enumerate(age_deltas):
+            age_bonus  = 0.3 if ad <= 10 else 0.0
+            int_bonus  = min(0.4, si * 0.1)
+            raw_score  = age_bonus + inc_bonus + int_bonus
+            Z[i, j]    = 0.5 + raw_score * 0.5
+
+    cmap6 = LinearSegmentedColormap.from_list("hom", [C_RED, C_YELLOW, C_GREEN])
+    im = ax.imshow(Z, aspect='auto', cmap=cmap6, vmin=0.5, vmax=1.0,
+                   origin='lower', extent=[-2.5, 42.5, -0.5, 4.5])
+    ax.set_xticks(age_deltas)
+    ax.set_yticks(shared_ints)
+    ax.set_xlabel("Age Delta (years)")
+    ax.set_ylabel("Shared Interests" if ax == axes[0] else "")
+    ax.set_title(f"Homophily Weight  ·  {label}", fontsize=11, pad=8, color=TEXT, fontweight='bold')
+    ax.tick_color = MUTED
+    fig.colorbar(im, ax=ax, label="Weight [0.5 – 1.0]", pad=0.01)
+
+fig.suptitle("Social Homophily Model  ·  _homophily_weight(a, b) → [0.5, 1.0]",
+             fontsize=13, fontweight='bold', color=TEXT, y=1.02)
+save(fig, 'chart_6_homophily.png')
+
+
+# ── Chart 7: Confidence Decay ──────────────────────────────────────────────────
+DECAY_RATE = 0.02
+ticks7  = np.arange(0, 21)
+starts  = [0.95, 0.75, 0.55, 0.30]
+colors7 = [C_GREEN, C_CYAN, C_YELLOW, C_ORANGE]
+labels7 = ["High confidence (0.95)", "Med-high (0.75)", "Med-low (0.55)", "Low (0.30)"]
+
+fig, ax = plt.subplots(figsize=(11, 5))
+for s, c, lbl in zip(starts, colors7, labels7):
+    decay = np.maximum(0.1, s * (1 - DECAY_RATE * ticks7))
+    ax.plot(ticks7, decay, color=c, linewidth=2.5, label=lbl)
+    ax.fill_between(ticks7, 0.1, decay, color=c, alpha=0.08)
+
+ax.axhline(0.1, color=MUTED, linestyle=':', linewidth=1.2, label='Floor (0.1)')
+ax.set_title("Temporal Confidence Decay  ·  Prior Resistance Under Social Pressure",
+             fontsize=13, pad=12, fontweight='bold', color=TEXT)
+ax.set_xlabel("Propagation Tick")
+ax.set_ylabel("Agent Confidence in Prior")
+ax.set_xlim(0, 20)
+ax.set_ylim(0, 1.05)
+ax.legend(loc='upper right')
+save(fig, 'chart_7_decay.png')
+
+
+# ── Animated GIF: Opinion Propagation on Network ───────────────────────────────
+print("  Generating anim_propagation.gif (may take ~30s)...")
+
+N_NODES = 80
+G_anim = nx.watts_strogatz_graph(N_NODES, 6, 0.15, seed=7)
+pos_anim = nx.spring_layout(G_anim, seed=7, k=0.6)
+
+STATE_COLORS = {
+    'unaware':    C_RED,
+    'aware':      C_BLUE,
+    'considering':C_YELLOW,
+    'adopted':    C_GREEN,
+    'rejected':   C_GRAY,
+}
+
+# Seed the initial state: top-5 degree nodes start as "aware"
+degrees_anim = dict(G_anim.degree())
+influencers  = sorted(degrees_anim, key=degrees_anim.get, reverse=True)[:5]
+init_states  = {n: ('aware' if n in influencers else 'unaware') for n in G_anim.nodes()}
+
+def propagate(states, rng):
+    new = states.copy()
+    for node in G_anim.nodes():
+        nbrs = list(G_anim.neighbors(node))
+        if not nbrs:
+            continue
+        ns = [states[n] for n in nbrs]
+        cur = states[node]
+        n_adopted     = ns.count('adopted')
+        n_considering = ns.count('considering')
+        n_aware       = ns.count('aware')
+        n_rejected    = ns.count('rejected')
+
+        if cur == 'unaware':
+            social = (n_aware + n_considering * 1.5 + n_adopted * 2.5) / len(nbrs)
+            if rng.random() < min(0.18 * social, 0.80):
+                new[node] = 'aware'
+        elif cur == 'aware':
+            social = (n_considering + n_adopted * 1.8) / len(nbrs)
+            if rng.random() < min(0.22 * social, 0.70):
+                new[node] = 'considering'
+        elif cur == 'considering':
+            social_pos = n_adopted / len(nbrs)
+            social_neg = n_rejected / len(nbrs)
+            if rng.random() < 0.30 + 0.25 * social_pos:
+                new[node] = 'adopted'
+            elif social_neg > social_pos and rng.random() < 0.12:
+                new[node] = 'rejected'
+    return new
+
+# Pre-compute all frames
+N_FRAMES = 22
+all_states = [init_states]
+cur = init_states
+for t in range(N_FRAMES - 1):
+    cur = propagate(cur, np.random.RandomState(42 + t))
+    all_states.append(cur)
+
+edges_list = list(G_anim.edges())
+edge_xs = [[pos_anim[u][0], pos_anim[v][0], None] for u, v in edges_list]
+edge_ys = [[pos_anim[u][1], pos_anim[v][1], None] for u, v in edges_list]
+
+fig_anim, ax_anim = plt.subplots(figsize=(10, 7), facecolor=BG)
+ax_anim.set_facecolor(PANEL)
+ax_anim.axis('off')
+
+legend_patches = [mpatches.Patch(color=v, label=k.capitalize()) for k, v in STATE_COLORS.items()]
+ax_anim.legend(handles=legend_patches, loc='lower right', fontsize=10,
+               facecolor='#111114', edgecolor=GRID)
+
+scat = ax_anim.scatter([], [], s=90, zorder=3)
+for ex, ey in zip(edge_xs, edge_ys):
+    ax_anim.plot([ex[0], ex[1]], [ey[0], ey[1]], color=GRID, alpha=0.45, linewidth=0.6, zorder=1)
+
+title_text = ax_anim.set_title("", fontsize=12, pad=10, fontweight='bold', color=TEXT)
+
+def update_anim(frame):
+    states_f = all_states[frame]
+    xs  = [pos_anim[n][0] for n in G_anim.nodes()]
+    ys  = [pos_anim[n][1] for n in G_anim.nodes()]
+    clr = [STATE_COLORS[states_f[n]] for n in G_anim.nodes()]
+    scat.set_offsets(np.column_stack([xs, ys]))
+    scat.set_color(clr)
+    counts = {s: sum(1 for v in states_f.values() if v == s) for s in STATE_COLORS}
+    title_text.set_text(
+        f"Tick {frame:02d}  ·  "
+        f"Adopted {counts['adopted']}  |  "
+        f"Considering {counts['considering']}  |  "
+        f"Aware {counts['aware']}  |  "
+        f"Rejected {counts['rejected']}"
+    )
+    return scat, title_text
+
+anim = FuncAnimation(fig_anim, update_anim, frames=N_FRAMES, interval=500, blit=False)
+writer = PillowWriter(fps=2)
+anim.save(os.path.join(static_dir, 'anim_propagation.gif'), writer=writer, dpi=100)
+plt.close(fig_anim)
+print("  OK anim_propagation.gif")
+
+print("\nAll charts generated in static/")
