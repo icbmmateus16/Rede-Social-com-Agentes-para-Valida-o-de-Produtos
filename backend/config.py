@@ -14,3 +14,5 @@ SOCIAL_PRESSURE_WEIGHT = float(os.getenv("SOCIAL_PRESSURE_WEIGHT", "0.35"))
 INFLUENCER_TOP_PCT = float(os.getenv("INFLUENCER_TOP_PCT", "0.05"))
 GRAPH_K_NEIGHBORS = int(os.getenv("GRAPH_K_NEIGHBORS", "6"))
 GRAPH_REWIRE_PROB = float(os.getenv("GRAPH_REWIRE_PROB", "0.15"))
+# Opinion model tuning
+CONFIDENCE_DECAY_RATE = float(os.getenv("CONFIDENCE_DECAY_RATE", "0.02"))

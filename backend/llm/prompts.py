@@ -93,11 +93,11 @@ PRODUTO: {product.name} — R${product.price_brl:.2f}/mês
 PÚBLICO: {", ".join(audience.cities)}, {audience.age_min}-{audience.age_max} anos
 
 MÉTRICAS DA SIMULAÇÃO:
-- Compra forte: {metrics.strong_buy_pct:.1f}%
-- Provável compra: {metrics.likely_buy_pct:.1f}%
-- Neutro: {metrics.neutral_pct:.1f}%
-- Improvável: {metrics.unlikely_pct:.1f}%
-- Rejeita: {metrics.reject_pct:.1f}%
+- Comprou: {metrics.purchased_pct:.1f}%
+- Considerando: {metrics.considering_pct:.1f}%
+- Consciente: {metrics.aware_pct:.1f}%
+- Desconhece: {metrics.unaware_pct:.1f}%
+- Rejeitou: {metrics.rejected_pct:.1f}%
 - Score médio: {metrics.avg_opinion_score:.2f} (-1 a +1)
 - Taxa de conversão estimada: {metrics.estimated_conversion_rate:.1f}%
 
@@ -127,6 +127,41 @@ Retorne APENAS um JSON válido com esta estrutura:
   ],
   "pricing_insight": "análise sobre o preço: está adequado, caro ou barato para este público?"
 }}"""
+
+
+def build_critique_prompt(draft_report: dict, metrics, product) -> str:
+    """
+    Pass 2: Send the draft report back to the LLM for a self-critique.
+    The model checks for internal consistency and improves where needed.
+    """
+    import json
+    return f"""Você é um analista sênior revisando um relatório de pesquisa de mercado.
+Revise o relatório abaixo e corrija inconsistências com os dados reais.
+
+MÉTRICAS REAIS DA SIMULAÇÃO:
+- Comprou: {metrics.purchased_pct:.1f}%
+- Considerando: {metrics.considering_pct:.1f}%
+- Consciente: {metrics.aware_pct:.1f}%
+- Desconhece: {metrics.unaware_pct:.1f}%
+- Rejeitou: {metrics.rejected_pct:.1f}%
+- Score médio de opinião: {metrics.avg_opinion_score:.3f} (escala -1 a +1)
+- Taxa de conversão estimada: {metrics.estimated_conversion_rate:.1f}%
+
+PRODUTO: {product.name} — R${product.price_brl:.2f}/mês
+
+RELATÓRIO DRAFT PARA REVISÃO:
+{json.dumps(draft_report, ensure_ascii=False, indent=2)}
+
+CRITÉRIOS DE REVISÃO:
+1. O executive_summary é específico para ESTE produto e ESTES dados? (não genérico)
+2. Se rejected_pct > 40%, o pricing_insight menciona resistência de preço?
+3. As recomendações são coerentes com os percentuais de rejeição/adoção?
+4. Os segmentos somam aproximadamente 100%?
+5. As sugestões de resposta às objeções são práticas e específicas?
+
+Retorne APENAS um JSON com a mesma estrutura do draft, melhorado onde necessário.
+Se o draft já estiver correto em algum campo, mantenha-o igual.
+Não adicione campos novos. Não remova campos existentes."""
 
 
 def _batch_age_range(age_min: int, age_max: int, batch_index: int, total_batches: int):

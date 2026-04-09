@@ -76,7 +76,7 @@ export default function MetricsBar({ metrics, tick, totalTicks, isRunning, onRun
 
       {/* Conversion */}
       <div style={{ textAlign: "center", flexShrink: 0, minWidth: 90 }}>
-        <motion.div 
+        <motion.div
           key={metrics?.estimated_conversion_rate ?? 0}
           initial={{ scale: 1.1, color: "#fff" }}
           animate={{ scale: 1, color: "var(--accent)" }}
@@ -88,6 +88,12 @@ export default function MetricsBar({ metrics, tick, totalTicks, isRunning, onRun
         <div style={{ color: "var(--text-secondary)", fontSize: "0.75rem", fontWeight: 500, marginTop: 4, whiteSpace: "nowrap" }}>
           Conversão est.
         </div>
+        {/* Confidence interval on opinion score */}
+        {metrics?.opinion_score_std != null && metrics.opinion_score_std > 0 && (
+          <div title="Intervalo de confiança 95% do score médio de opinião" style={{ color: "var(--text-muted)", fontSize: "0.65rem", marginTop: 4, whiteSpace: "nowrap" }}>
+            IC [{metrics.opinion_ci_low.toFixed(2)}, {metrics.opinion_ci_high.toFixed(2)}]
+          </div>
+        )}
       </div>
 
       {/* Divider */}

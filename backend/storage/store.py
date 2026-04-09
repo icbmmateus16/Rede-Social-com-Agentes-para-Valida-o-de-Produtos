@@ -1,5 +1,4 @@
 import json
-import os
 import logging
 from pathlib import Path
 from models.simulation import Simulation
@@ -8,8 +7,9 @@ from models.graph import GraphData
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path("data")
-DATA_DIR.mkdir(exist_ok=True)
+# Absolute path relative to this file — works regardless of CWD
+DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory stores
 _simulations: dict[str, Simulation] = {}
@@ -38,6 +38,15 @@ def delete_simulation(sim_id: str) -> bool:
     _agents.pop(sim_id, None)
     _graphs.pop(sim_id, None)
     _adjacency.pop(sim_id, None)
+
+    # Remove persisted files from disk so they don't resurrect on restart
+    for fname in (f"{sim_id}.json", f"{sim_id}_events.jsonl"):
+        fpath = DATA_DIR / fname
+        try:
+            fpath.unlink(missing_ok=True)
+        except Exception as e:
+            logger.warning(f"Could not delete {fpath}: {e}")
+
     return True
 
 
@@ -70,18 +79,29 @@ def get_adjacency(sim_id: str) -> dict[str, list[str]]:
 
 
 def _persist_simulation(sim: Simulation) -> None:
+    """Write simulation atomically: temp file → rename (avoids corrupt state on crash)."""
     try:
         path = DATA_DIR / f"{sim.id}.json"
-        path.write_text(sim.model_dump_json(indent=2), encoding="utf-8")
+        tmp_path = path.with_suffix(".tmp")
+        tmp_path.write_text(sim.model_dump_json(indent=2), encoding="utf-8")
+        tmp_path.replace(path)  # atomic on POSIX, near-atomic on Windows
     except Exception as e:
         logger.warning(f"Could not persist simulation {sim.id}: {e}")
 
 
 def load_persisted_simulations() -> None:
+    """Load all simulation JSON files on startup. Quarantine corrupt files."""
+    bad_dir = DATA_DIR / "corrupt"
     for path in DATA_DIR.glob("*.json"):
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             sim = Simulation.model_validate(data)
             _simulations[sim.id] = sim
+            logger.info(f"Loaded simulation {sim.id} ({sim.name!r})")
         except Exception as e:
-            logger.warning(f"Could not load {path}: {e}")
+            logger.warning(f"Corrupt simulation file {path.name}: {e}. Moving to corrupt/")
+            bad_dir.mkdir(exist_ok=True)
+            try:
+                path.rename(bad_dir / path.name)
+            except Exception as rename_err:
+                logger.error(f"Could not quarantine {path.name}: {rename_err}")

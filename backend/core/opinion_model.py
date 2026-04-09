@@ -1,24 +1,51 @@
-from models.agent import Agent, FunnelStage, score_to_intent, INTENT_COLORS
-from config import SOCIAL_PRESSURE_WEIGHT
 import random
+from models.agent import Agent, FunnelStage, score_to_intent, INTENT_COLORS
+from config import SOCIAL_PRESSURE_WEIGHT, CONFIDENCE_DECAY_RATE
+
+
+def _homophily_weight(agent_a: Agent, agent_b: Agent) -> float:
+    """
+    Returns a similarity weight in [0.5, 1.0].
+    Higher value = stronger mutual influence between agents.
+    """
+    score = 0.0
+    # Same age bracket (±10 years) — shared life context
+    if abs(agent_a.profile.age - agent_b.profile.age) <= 10:
+        score += 0.3
+    # Same income class — similar purchasing power
+    if agent_a.profile.income_class == agent_b.profile.income_class:
+        score += 0.3
+    # Shared interests — common topics of conversation
+    shared = set(agent_a.profile.interests) & set(agent_b.profile.interests)
+    score += min(0.4, len(shared) * 0.1)
+    return 0.5 + score * 0.5  # clamp to [0.5, 1.0]
+
 
 def run_tick(
     agents: list[Agent],
     adjacency: dict[str, list[str]],
     tick: int,
+    seed: int = 42,
 ) -> list[dict]:
     """
-    Funnel Propagation Model (Awareness -> Consideration -> Purchase).
-    Incorporates Bayesian social updates and price resistance.
+    Funnel Propagation Model (Awareness → Consideration → Purchase).
+    Incorporates:
+    - Bayesian social updates weighted by homophily
+    - Temporal confidence decay (agents become more susceptible over time)
+    - Price resistance
+    - Market shock mechanics (deterministic per tick via seeded RNG)
     """
     agent_map = {a.id: a for a in agents}
     new_scores: dict[str, float] = {}
     events: list[dict] = []
 
-    # Market Shock mechanics (10% chance per tick to have a viral shock for influencers)
+    # Deterministic RNG seeded per-tick — same seed+tick always produces same result
+    rng = random.Random(seed + tick)
+
+    # Market Shock: 15% chance per tick for a viral momentum event
     market_shock = 0.0
-    if tick > 2 and random.random() < 0.15:
-        market_shock = random.uniform(-0.15, 0.25) # Positive or negative viral momentum
+    if tick > 2 and rng.random() < 0.15:
+        market_shock = rng.uniform(-0.15, 0.25)
 
     for agent in agents:
         if not agent.has_opinion:
@@ -34,34 +61,39 @@ def run_tick(
             new_scores[agent.id] = agent.opinion.score
             continue
 
-        # Weighted neighbor influence
+        # Weighted neighbor influence — scaled by influence score AND homophily
         total_weight = 0.0
         weighted_sum = 0.0
         for neighbor in informed_neighbors:
-            w = 0.5 + neighbor.influence_score * 2.0
+            influence = 0.5 + neighbor.influence_score * 2.0
+            similarity = _homophily_weight(agent, neighbor)
+            w = influence * similarity
             weighted_sum += neighbor.opinion.score * w
             total_weight += w
 
         neighbor_avg = weighted_sum / total_weight if total_weight > 0 else 0.0
 
-        # Bayesian-style update
-        prior_weight = agent.opinion.confidence
+        # Temporal confidence decay — agents become more open to social influence over time
+        decayed_confidence = agent.opinion.confidence * (1.0 - CONFIDENCE_DECAY_RATE * tick)
+        decayed_confidence = max(0.1, decayed_confidence)
+
+        # Bayesian-style update using decayed confidence as prior weight
+        prior_weight = decayed_confidence
         social_weight = (1.0 - prior_weight) * SOCIAL_PRESSURE_WEIGHT
 
         if agent.is_influencer:
-            social_weight *= 0.2 # Influencers resist others heavily
-            
-        # Price and Risk friction logic (if score goes high, price friction pulls back)
+            social_weight *= 0.2  # Influencers resist peer pressure heavily
+
+        # Price and Risk friction (if social pressure pushes toward purchase)
         price_friction = 0.0
-        if neighbor_avg > 0.2: # Consideration block
-            # If product perceived as "good", check if they can afford the risk
+        if neighbor_avg > 0.2:
             price_friction = (agent.opinion.price_sensitivity_score * 0.15) + (agent.profile.risk_tolerance * 0.05)
 
         base_update = agent.opinion.score * (1.0 - social_weight) + neighbor_avg * social_weight
-        
-        # Apply shocks selectively
+
+        # Apply shock selectively: digitally-savvy agents feel viral momentum more
         shock_effect = market_shock if agent.profile.digital_savviness > 0.5 else market_shock * 0.3
-        
+
         new_score = base_update - price_friction + shock_effect
         new_score = max(-1.0, min(1.0, new_score))
         new_scores[agent.id] = new_score

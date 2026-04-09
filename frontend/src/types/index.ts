@@ -50,6 +50,9 @@ export interface SimulationMetrics {
   top_objections: string[];
   top_motivators: string[];
   estimated_conversion_rate: number;
+  opinion_score_std: number;
+  opinion_ci_low: number;
+  opinion_ci_high: number;
 }
 
 export interface SimulationReport {
@@ -59,6 +62,7 @@ export interface SimulationReport {
   recommendations: string[];
   pricing_insight: string;
   generated_at: string;
+  generation_passes: number;
 }
 
 export interface Simulation {

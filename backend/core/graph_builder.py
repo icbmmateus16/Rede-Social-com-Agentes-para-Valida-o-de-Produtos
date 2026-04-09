@@ -7,12 +7,12 @@ from models.graph import GraphData, GraphNode, GraphEdge
 from config import GRAPH_K_NEIGHBORS, GRAPH_REWIRE_PROB, INFLUENCER_TOP_PCT
 
 
-def build_graph(agents: list[Agent]) -> tuple[nx.Graph, GraphData]:
+def build_graph(agents: list[Agent], seed: int = 42) -> tuple[nx.Graph, GraphData]:
     n = len(agents)
     k = min(GRAPH_K_NEIGHBORS, n - 1)
 
-    # Build Watts-Strogatz small-world graph
-    G = nx.watts_strogatz_graph(n, k, GRAPH_REWIRE_PROB, seed=42)
+    # Build Watts-Strogatz small-world graph with explicit seed for reproducibility
+    G = nx.watts_strogatz_graph(n, k, GRAPH_REWIRE_PROB, seed=seed)
 
     # Map node index → agent
     idx_to_agent = {i: a for i, a in enumerate(agents)}
@@ -33,7 +33,7 @@ def build_graph(agents: list[Agent]) -> tuple[nx.Graph, GraphData]:
         agent.is_influencer = i in influencer_indices
 
     # Compute force-directed layout positions
-    pos = _compute_layout(G, agents, communities)
+    pos = _compute_layout(G, agents, communities, seed=seed)
 
     # Build GraphData
     nodes = []
@@ -84,18 +84,20 @@ def _assign_communities(agents: list[Agent]) -> list[int]:
     return community_ids
 
 
-def _compute_layout(G: nx.Graph, agents: list[Agent], communities: list[int]) -> dict:
+def _compute_layout(G: nx.Graph, agents: list[Agent], communities: list[int], seed: int = 42) -> dict:
     n = len(agents)
     num_communities = max(set(communities)) + 1
+
+    rng = random.Random(seed)
 
     # Initialize positions with community-based clustering
     pos = {}
     for i in range(n):
         comm = communities[i]
         angle = (2 * math.pi * comm) / num_communities
-        radius = 0.3 + random.uniform(-0.1, 0.1)
-        noise_x = random.uniform(-0.08, 0.08)
-        noise_y = random.uniform(-0.08, 0.08)
+        radius = 0.3 + rng.uniform(-0.1, 0.1)
+        noise_x = rng.uniform(-0.08, 0.08)
+        noise_y = rng.uniform(-0.08, 0.08)
         pos[i] = (
             math.cos(angle) * radius + noise_x,
             math.sin(angle) * radius + noise_y,
@@ -103,7 +105,7 @@ def _compute_layout(G: nx.Graph, agents: list[Agent], communities: list[int]) ->
 
     # Run spring layout with community-seeded positions for stability
     try:
-        pos = nx.spring_layout(G, pos=pos, iterations=50, seed=42, k=0.3)
+        pos = nx.spring_layout(G, pos=pos, iterations=50, seed=seed, k=0.3)
     except Exception:
         pass
 

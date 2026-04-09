@@ -13,6 +13,7 @@ const EMPTY_METRICS = {
   purchased_pct: 0, considering_pct: 0, aware_pct: 0,
   unaware_pct: 0, rejected_pct: 0, avg_opinion_score: 0,
   top_objections: [], top_motivators: [], estimated_conversion_rate: 0,
+  opinion_score_std: 0, opinion_ci_low: 0, opinion_ci_high: 0,
 };
 
 export default function SimulationView() {
@@ -368,31 +369,53 @@ export default function SimulationView() {
                   />
                 </div>
                 
+                {/* Phase title */}
                 <h3 style={{ color: "var(--text-primary)", fontSize: "1.25rem", fontWeight: 800, marginBottom: 8, letterSpacing: "-0.01em" }}>
                   {generationPhase === "forming_opinions" ? "Definindo crenças iniciais..." :
                    generationPhase === "building_graph" ? "Conectando a rede social..." :
                    `Sintetizando ${simulation?.agent_count ?? ""} agentes de IA...`}
                 </h3>
-                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", maxWidth: 300, textAlign: "center", marginBottom: 24, lineHeight: 1.5 }}>
-                  {generationPhase === "forming_opinions" ? "Cada agente está avaliando o produto com base no seu perfil psicológico." :
-                   generationPhase === "building_graph" ? "O algoritmo de força está clusterizando comunidades por afinidade." :
-                   "Gerando identidades ultra-realistas usando o modelo Groq B2B."}
+
+                {/* Contextual description */}
+                <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", maxWidth: 320, textAlign: "center", marginBottom: 24, lineHeight: 1.5 }}>
+                  {generationPhase === "forming_opinions"
+                    ? "Cada agente avalia o produto com base no seu perfil psicológico único."
+                    : generationPhase === "building_graph"
+                    ? "Algoritmo Watts-Strogatz clusterizando comunidades por afinidade."
+                    : "Gerando identidades ultra-realistas com o modelo Groq LLM."}
                 </div>
-                
-                {/* Progress bar spring animated */}
-                <div style={{ width: 280, background: "var(--bg-elevated)", border: "1px solid var(--border-glow)", borderRadius: 99, height: 6, overflow: "hidden", position: "relative" }}>
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${generationProgress}%` }}
-                    transition={{ type: "spring", stiffness: 50, damping: 15 }}
+
+                {/* Percentage + progress bar */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, width: 280 }}>
+                  <motion.div
+                    key={Math.floor(generationProgress / 5)}
+                    initial={{ scale: 1.05 }}
+                    animate={{ scale: 1 }}
                     style={{
-                      height: "100%", background: "var(--accent)", borderRadius: 99,
-                      boxShadow: "0 0 10px var(--accent-glow)",
-                    }} 
-                  />
-                </div>
-                <div style={{ color: "var(--accent)", fontSize: "0.85rem", fontWeight: 700, marginTop: 12 }}>
-                  {generationProgress.toFixed(0)}% <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>Processando inteligências</span>
+                      fontSize: "2.75rem", fontWeight: 900, lineHeight: 1,
+                      color: "var(--accent)", fontFamily: "var(--font-mono, monospace)",
+                      letterSpacing: "-0.03em",
+                    }}
+                  >
+                    {Math.round(generationProgress)}%
+                  </motion.div>
+
+                  <div style={{ width: "100%", background: "var(--bg-elevated)", border: "1px solid var(--border-glow)", borderRadius: 99, height: 6, overflow: "hidden" }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${generationProgress}%` }}
+                      transition={{ type: "spring", stiffness: 50, damping: 15 }}
+                      style={{ height: "100%", background: "var(--accent)", borderRadius: 99, boxShadow: "0 0 10px var(--accent-glow)" }}
+                    />
+                  </div>
+
+                  <div style={{ color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 500 }}>
+                    {generationPhase === "building_graph"
+                      ? "Quase pronto — construindo conexões..."
+                      : generationPhase === "forming_opinions"
+                      ? "Formando opiniões individuais..."
+                      : "Isso pode levar 1-2 minutos"}
+                  </div>
                 </div>
               </motion.div>
             )}

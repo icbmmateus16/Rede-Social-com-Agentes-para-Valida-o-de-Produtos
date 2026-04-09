@@ -7,11 +7,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json" },
     ...options,
   });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || `HTTP ${res.status}`);
+  const body = await res.json().catch(() => null);
+  // Unwrap ApiResponse envelope { success, data, error }
+  if (body && typeof body === "object" && "success" in body) {
+    if (!body.success) {
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    return body.data as T;
   }
-  return res.json();
+  // Fallback for non-enveloped responses
+  if (!res.ok) {
+    throw new Error(body ? JSON.stringify(body) : `HTTP ${res.status}`);
+  }
+  return body as T;
 }
 
 export const api = {

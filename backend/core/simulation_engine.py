@@ -103,7 +103,7 @@ async def _generate_and_build(sim_id: str) -> None:
         store.save_simulation(sim)
         await _broadcast(sim_id, {"type": "generation_progress", "phase": "building_graph", "pct": 95.0})
 
-        G, graph_data = graph_builder.build_graph(agents)
+        G, graph_data = graph_builder.build_graph(agents, seed=sim.random_seed)
         adjacency = graph_builder.graph_to_adjacency(G, agents)
         store.save_graph(sim_id, graph_data)
         store.save_adjacency(sim_id, adjacency)
@@ -166,7 +166,7 @@ async def _run_propagation(sim_id: str) -> None:
 
             sim.status = SimulationStatus.RUNNING
 
-            events = opinion_model.run_tick(agents, adjacency, tick)
+            events = opinion_model.run_tick(agents, adjacency, tick, seed=sim.random_seed)
             node_updates = opinion_model.build_node_updates(agents)
 
             # Sync graph data

@@ -1,9 +1,10 @@
-import asyncio
 import json
 import re
 import logging
 from groq import AsyncGroq
+from groq import RateLimitError, APIStatusError, APIConnectionError
 from config import GROQ_API_KEY, GROQ_MODEL
+from llm.retry import async_retry
 
 logger = logging.getLogger(__name__)
 
@@ -17,24 +18,24 @@ def get_client() -> AsyncGroq:
     return _client
 
 
-async def complete(prompt: str, max_tokens: int = 4096, retries: int = 3) -> str:
+@async_retry(
+    max_retries=4,
+    initial_delay=1.0,
+    max_delay=60.0,
+    backoff_factor=2.0,
+    jitter=True,
+    exceptions=(RateLimitError, APIStatusError, APIConnectionError, Exception),
+)
+async def complete(prompt: str, max_tokens: int = 4096) -> str:
+    """Call Groq API with automatic exponential-backoff retry."""
     client = get_client()
-    for attempt in range(retries):
-        try:
-            response = await client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=0.8,
-            )
-            return response.choices[0].message.content or ""
-        except Exception as e:
-            if attempt < retries - 1:
-                wait = 2 ** attempt
-                logger.warning(f"Groq error (attempt {attempt+1}): {e}. Retrying in {wait}s...")
-                await asyncio.sleep(wait)
-            else:
-                raise
+    response = await client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=max_tokens,
+        temperature=0.8,
+    )
+    return response.choices[0].message.content or ""
 
 
 def extract_json(text: str) -> str:
